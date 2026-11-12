@@ -50,7 +50,7 @@ def measure(text):
     return max(0, sum(len(G.get(c, G[" "])[0]) + 1 for c in text if c not in "[]") - 1)
 
 
-def draw_label(img, text, cx, top, s):
+def draw_label(img, text, cx, top, s, ink=INK):
     """The runtime's label: shadow pass, outline pass, fill pass; [brackets] = accent. cx = centre x."""
     a = img
     w = measure(text)
@@ -77,7 +77,7 @@ def draw_label(img, text, cx, top, s):
                     elif pas == 1:
                         a[py - o:py + s + o, px - o:px + s + o] = EDGE
                     else:
-                        a[py:py + s, px:px + s] = ACCENT if hot else INK
+                        a[py:py + s, px:px + s] = ACCENT if hot else ink
             x += (len(g[0]) + 1) * s
     return x0, x0 + w * s
 
@@ -268,6 +268,15 @@ def claude_mark(n):
     return outlined([(mark_mask("claude", n), rgb("#d97757"), 0, 0)], n + 2)
 
 
+def github_mark(n):
+    """White mark, the octocat cut-out filled dark (as it sits on a dark surface) so the scene doesn't show
+    through. The cut-out opens at the circle's bottom edge, so it is found as the mark's disc minus the mark."""
+    m = mark_mask("github", n)
+    yy, xx = np.mgrid[0:n, 0:n] + 0.5
+    disc = np.hypot(xx - 12 * n / 24, yy - 12.15 * n / 24) <= 11.85 * n / 24  # the circle in the 24-unit icon
+    return outlined([(m, INK, 0, 0), (disc & ~m, EDGE, 0, 0)], n + 2)
+
+
 def tiktok_mark(n):
     m = mark_mask("tiktok", n)
     # the official construction: cyan shadow up-left, red shadow down-right, white note on top
@@ -283,9 +292,9 @@ def paste_rgba(img, spr, x0, y0, s):
     return x0 + w
 
 
-def text_left(img, text, x, top, s):
+def text_left(img, text, x, top, s, ink=INK):
     w = measure(text) * s
-    draw_label(img, text, x + w // 2, top, s)
+    draw_label(img, text, x + w // 2, top, s, ink)
     return x + w
 
 
@@ -390,7 +399,9 @@ def stats_column(img, col_x, top, col_w):
     card(img, "completion.png", col_x + col_w - half, y, half)
 
 
-def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stats_column, out=OUT):
+def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stats_column, out=OUT,
+            corner=False, caption=None):
+    """corner: the GitHub mark in the top-right corner; caption: a word under the Claude mark."""
     """view = (map x, map y) of the top-left corner; size = (width, height) in image px."""
     S = 2  # one map px = 2 x 2 image px
     W, H = size
@@ -398,7 +409,9 @@ def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stat
     mx, my = view
     img = np.repeat(np.repeat(art[my:my + H // S, mx:mx + W // S], S, 0), S, 1).copy()
     left, top = 10 * PX, 8 * PX  # the left text block and the proof column share this top line
-    col_x = W - left - col_w
+    mark, ms = 22, 3  # marks drawn on the nameplates' 3 px grid: fine enough to stay recognisable
+    gm = github_mark(mark) if corner else None
+    col_x = W - left - col_w - (gm.shape[1] * ms + 6 * PX if corner else 0)
 
     spans = []
     for h, x, y in walkers:
@@ -411,7 +424,6 @@ def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stat
         assert cx + half < col_x - PX, "a nameplate runs under the proof column"
 
     # top left: Claude + TikTok = $$$, the marks on the nameplates' 3 px grid
-    mark, ms = 22, 3
     op_s = 2 * PX
     cm, tm = claude_mark(mark), tiktok_mark(mark)
     mid = top + (tm.shape[0] * ms) // 2
@@ -424,6 +436,12 @@ def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stat
         x = text_left(img, "[$]", x + (gap if k == 0 else 4 * PX), mid - 7 * op_s // 2, op_s)
 
     t_top = top + tm.shape[0] * ms + 6 * PX
+    if corner:  # same row and same outer margin as the equation, mirrored on the right
+        paste_rgba(img, gm, W - left + ms - gm.shape[1] * ms, mid - gm.shape[0] * ms // 2, ms)
+    if caption:  # centred under the Claude mark, in Claude's own colour
+        cap_s, cap_top = 3, mid + cm.shape[0] * ms // 2 + 3 * PX
+        draw_label(img, caption, left - ms + cm.shape[1] * ms // 2, cap_top, cap_s, rgb("#d97757"))
+        t_top = max(t_top, cap_top + 7 * cap_s + 7 * PX)
     text_left(img, "ORGANIC STORY ENGINE", left, t_top, title_scale)
     text_left(img, "YOUR AUDIENCE WRITES THE [CANON]", left, t_top + 7 * title_scale + 5 * PX, sub_scale)
 
