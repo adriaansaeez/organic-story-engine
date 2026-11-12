@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/hero.png" alt="Organic Story Engine: pixel villagers with their follower handles walking towards a campfire at dusk" width="100%"></p>
+<p align="center"><img src="docs/hero.png" alt="Organic Story Engine: Claude plus TikTok equals money, pixel villagers with follower handles walking to a campfire, and the real stats of one episode: $49.84 in rewards, 45K views, 1.5K new followers" width="100%"></p>
 
 **Organic Story Engine** is a kit for running a short-form series where every follower is a character,
 every comment is a story request and every episode ends with a vote that changes the world for good.
@@ -112,3 +112,7 @@ See [canon](docs/canon.md) and [anatomy of an episode](docs/episode-anatomy.md).
 
 Code is MIT. The example world in `examples/village/` is CC BY-NC 4.0: adapt it for a non-commercial
 series with attribution, or build your own world for anything else. See [LICENSE](LICENSE).
+
+Claude is a trademark of Anthropic and TikTok a trademark of ByteDance; the marks in the banner come from
+[Simple Icons](https://simpleicons.org) and are used only to name the tools. This project is not affiliated
+with either company. The numbers in the banner are real screenshots from one video made with this kit.

@@ -8,7 +8,8 @@ Everything in the picture is the project's own material: the dusk backdrop comes
 from the example world's scene generator, the villagers are its profile sprites
 recoloured from invented handles with the census look algorithm, and every
 letter is drawn with the runtime's 5x7 pixel font (parsed from story.js), so the
-banner looks exactly like the videos.
+banner looks exactly like the videos. The Claude and TikTok marks are the real Simple Icons paths in
+docs/marks/, rasterised here onto the pixel grid; docs/proof/ holds the cropped stats screenshots.
 """
 import json
 import math
@@ -197,53 +198,204 @@ def warm_light(art, cx, ground, rx, ry):
             art[y, x] = (art[y, x] * (1 - k) + tint * k).astype(np.uint8)
 
 
-def compose(aw, ah, crop_top, handles, fire_x, title_scale, sub_scale, name):
+# ------------------------------------------------------------------ the real marks, rasterised to the art grid
+def svg_polys(d):
+    """Flatten an SVG path (M L H V C Z, absolute and relative) into polygons in its own units."""
+    toks = re.findall(r"[MmLlHhVvCcZz]|-?(?:\d+(?:\.\d+)?|\.\d+)", d)
+    polys, cur, x, y, sx, sy, i, cmd = [], [], 0.0, 0.0, 0.0, 0.0, 0, None
+    def num():
+        nonlocal i
+        i += 1
+        return float(toks[i - 1])
+    while i < len(toks):
+        if toks[i].isalpha():
+            cmd = toks[i]
+            i += 1
+        rel = cmd.islower()
+        c = cmd.upper()
+        if c == "Z":
+            if cur:
+                polys.append(cur)
+            cur, x, y = [], sx, sy
+            continue
+        if c == "M":
+            if cur:
+                polys.append(cur)
+            nx, ny = num(), num()
+            x, y = (x + nx, y + ny) if rel else (nx, ny)
+            sx, sy, cur = x, y, [(x, y)]
+            cmd = "l" if rel else "L"
+        elif c == "L":
+            nx, ny = num(), num()
+            x, y = (x + nx, y + ny) if rel else (nx, ny)
+            cur.append((x, y))
+        elif c == "H":
+            n = num()
+            x = x + n if rel else n
+            cur.append((x, y))
+        elif c == "V":
+            n = num()
+            y = y + n if rel else n
+            cur.append((x, y))
+        elif c == "C":
+            pts = [num() for _ in range(6)]
+            if rel:
+                pts = [v + (x if k % 2 == 0 else y) for k, v in enumerate(pts)]
+            x1, y1, x2, y2, x3, y3 = pts
+            for k in range(1, 17):
+                t = k / 16
+                a, b, c3, d3 = (1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t * t, t ** 3
+                cur.append((a * x + b * x1 + c3 * x2 + d3 * x3, a * y + b * y1 + c3 * y2 + d3 * y3))
+            x, y = x3, y3
+    if cur:
+        polys.append(cur)
+    return polys
+
+
+def mark_mask(name, n):
+    """The brand mark from docs/marks/<name>.svg (Simple Icons, 24x24) as an n x n pixel mask."""
+    from PIL import ImageChops, ImageDraw
+    d = re.search(r' d="([^"]+)"', open(os.path.join(OUT, "marks", name + ".svg")).read()).group(1)
+    ss = 16
+    mask = Image.new("1", (n * ss, n * ss), 0)
+    for poly in svg_polys(d):
+        layer = Image.new("1", mask.size, 0)
+        ImageDraw.Draw(layer).polygon([(px * n * ss / 24, py * n * ss / 24) for px, py in poly], fill=1)
+        mask = ImageChops.logical_xor(mask, layer)  # even-odd, so holes stay holes
+    cover = np.asarray(mask.convert("L"), np.float32).reshape(n, ss, n, ss).mean((1, 3)) / 255
+    return cover > 0.42
+
+
+def outlined(layers, size):
+    """Stack (mask, colour, dx, dy) layers on a transparent sprite and ring the union in the edge colour."""
+    out = np.zeros((size, size, 4), np.uint8)
+    union = np.zeros((size, size), bool)
+    for m, col, dx, dy in layers:
+        h, w = m.shape
+        sub = np.zeros((size, size), bool)
+        sub[1 + dy:1 + dy + h, 1 + dx:1 + dx + w] = m
+        out[sub] = (*col, 255)
+        union |= sub
+    ring = np.zeros_like(union)
+    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+        ring |= np.roll(np.roll(union, dy, 0), dx, 1)
+    ring &= ~union
+    out[ring] = (*EDGE, 255)
+    return out
+
+
+def claude_mark(n):
+    return outlined([(mark_mask("claude", n), rgb("#d97757"), 0, 0)], n + 2)
+
+
+def tiktok_mark(n):
+    m = mark_mask("tiktok", n)
+    # the official construction: cyan shadow up-left, red shadow down-right, white note on top
+    return outlined([(m, rgb("#25f4ee"), 0, 0), (m, rgb("#fe2c55"), 2, 2), (m, (255, 255, 255), 1, 1)], n + 4)
+
+
+def paste_rgba(img, spr, x0, y0, s):
+    """Paste an RGBA pixel sprite onto the image at (x0, y0), each sprite px = s x s image px."""
+    big = np.repeat(np.repeat(spr, s, 0), s, 1)
+    h, w = big.shape[:2]
+    a = big[..., 3:] / 255.0
+    img[y0:y0 + h, x0:x0 + w] = (img[y0:y0 + h, x0:x0 + w] * (1 - a) + big[..., :3] * a).astype(np.uint8)
+    return x0 + w
+
+
+def text_left(img, text, x, top, s):
+    w = measure(text) * s
+    draw_label(img, text, x + w // 2, top, s)
+    return x + w
+
+
+# ------------------------------------------------------------------ the numbers, as proof
+def card(img, name, x, y, w):
+    """A screenshot crop from docs/proof/, framed like the runtime's labels: edge outline + hard drop shadow."""
+    src = Image.open(os.path.join(OUT, "proof", name)).convert("RGB")
+    h = round(src.height * w / src.width)
+    pic = np.asarray(src.resize((w, h), Image.LANCZOS))
+    o, sh = PX, 2 * PX
+    img[y + sh:y + h + sh + o, x - o + sh // 2:x + w + o + sh // 2] = EDGE
+    img[y - o:y + h + o, x - o:x + w + o] = EDGE
+    img[y:y + h, x:x + w] = pic
+    return y + h
+
+
+def compose(aw, ah, crop_top, handles, fire_x, title_scale, sub_scale, col_w, name):
     art, ground = backdrop(aw)
     art = art[crop_top:crop_top + ah].copy()
     g = ground - crop_top  # feet line inside the crop
+    W, H = aw * PX, ah * PX
+    left, top = 10 * PX, 8 * PX  # the left text block and the proof column share this top line
+    col_x = W - left - col_w
 
-    # the fire, its light on the ground, two founders already there
+    # the fire, its light on the ground, the first villager waiting by it
     warm_light(art, fire_x, g + 1, 26, 5)
     fire, fa = frame("fogata", "f1")
     paste(art, fire, fire_x, g + 1, fa)
-    log, la = frame("tronco", "log")
-    paste(art, log, fire_x + 30, g + 1, la)
 
-    # the procession: followers walking in from the mist at the left edge, towards the fire
+    # the procession: followers walking in from the left edge, towards the fire
     walkers = []
     spacing = (fire_x - 40) / len(handles)
     for i, h in enumerate(handles):
         x = 20 + i * spacing
-        fr = ("walk1", "stand", "walk2")[i % 3]
-        spr, an = citizen(h, fr)
+        spr, an = citizen(h, ("walk1", "stand", "walk2")[i % 3])
         paste(art, spr, x, g, an)
         walkers.append((h, x))
     host, an = citizen("the_founder", "talk1")
-    paste(art, host, fire_x + 14, g, an, flip=True)  # the first villager, by the fire, facing the newcomers
+    paste(art, host, fire_x + 14, g, an, flip=True)
 
-    tw = (measure("ORGANIC STORY ENGINE") * title_scale) // PX // 2 + 4
-    band = art[8:42, aw // 2 - tw:aw // 2 + tw]  # only behind the title block
+    # stars behind the text block would read as punctuation: clear them there only
+    title_w = measure("ORGANIC STORY ENGINE") * title_scale
+    band = art[4:60, :(left + title_w) // PX + 4]
     lum = band.astype(int).sum(2)
     for y, x in zip(*np.nonzero(lum > 520)):
         band[y, x] = band[y, x - 1] if x else band[y, x + 1]
 
     img = np.repeat(np.repeat(art, PX, 0), PX, 1)
-    H, W = img.shape[:2]
 
-    # nameplates over every head (the videos' own nick tags)
+    spans = []
     for h, x in walkers:
         draw_tag(img, h, int(x * PX), int((g - 18) * PX), 3)
+        half = (sum(len((L.get(c) or G.get(c.upper()) or G[" "])[0]) + 1 for c in h) + 3) * 3 // 2
+        spans.append((int(x * PX) - half, int(x * PX) + half))
+    for (_, r), (l2, _) in zip(spans, spans[1:]):
+        assert l2 - r >= 12, "two nameplates touch"
     draw_tag(img, "the_founder", int((fire_x + 14) * PX), int((g - 18) * PX), 3)
+    assert (fire_x + 14) * PX + 100 < col_x - PX, "the founder's nameplate runs under the proof column"
 
-    # title + line in the runtime's label font
-    t_top = 13 * PX
-    draw_label(img, "ORGANIC STORY ENGINE", W // 2, t_top, title_scale)
-    draw_label(img, "YOUR AUDIENCE WRITES THE [CANON]", W // 2, t_top + 7 * title_scale + 6 * PX, sub_scale)
+    # top left: Claude + TikTok = $$$, the marks on the same pixel grid as the type
+    mark, ms = 22, 3  # marks drawn on the nameplates' 3 px grid: fine enough to stay recognisable
+    op_s = 2 * PX  # operator glyphs: 7 rows x 10 px = 70 px, about the marks' height
+    cm, tm = claude_mark(mark), tiktok_mark(mark)
+    mid = top + (tm.shape[0] * ms) // 2  # vertical centre of the row
+    x = paste_rgba(img, cm, left - ms, mid - cm.shape[0] * ms // 2, ms)
+    gap = 6 * PX
+    x = text_left(img, "+", x + gap, mid - 7 * op_s // 2, op_s)
+    x = paste_rgba(img, tm, x + gap, mid - tm.shape[0] * ms // 2, ms)
+    x = text_left(img, "=", x + gap, mid - 7 * op_s // 2, op_s)
+    for k in range(3):  # three separate coins, each with its own outline and air around it
+        x = text_left(img, "[$]", x + (gap if k == 0 else 4 * PX), mid - 7 * op_s // 2, op_s)
+
+    # title + line, left-aligned under the equation
+    t_top = top + tm.shape[0] * ms + 6 * PX
+    text_left(img, "ORGANIC STORY ENGINE", left, t_top, title_scale)
+    text_left(img, "YOUR AUDIENCE WRITES THE [CANON]", left, t_top + 7 * title_scale + 5 * PX, sub_scale)
+
+    # right: the real numbers of one video, stacked as a pinned board
+    gap = 5 * PX
+    y = card(img, "rewards.png", col_x, top, col_w) + gap
+    y = card(img, "stats.png", col_x, y, col_w) + gap
+    half = (col_w - gap) // 2
+    card(img, "followers.png", col_x, y, half)
+    card(img, "completion.png", col_x + col_w - half, y, half)
+
     Image.fromarray(img).save(os.path.join(OUT, name), optimize=True)
     print(name, W, "x", H)
 
 
 if __name__ == "__main__":
     folks = ["luna_n", "pixelpau", "koldo.h", "ana.mil", "brujo.e"]
-    compose(320, 128, 44, folks, 248, 10, 5, "hero.png")
-    compose(256, 128, 44, folks[:4], 196, 8, 4, "social.png")
+    compose(320, 128, 44, folks[:4], 160, 8, 4, 500, "hero.png")
+    compose(256, 128, 44, ["luna_n", "koldo.h", "ana.mil"], 124, 6, 3, 400, "social.png")
