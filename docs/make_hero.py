@@ -400,8 +400,8 @@ def stats_column(img, col_x, top, col_w):
 
 
 def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stats_column, out=OUT,
-            corner=False, caption=None):
-    """corner: the GitHub mark in the top-right corner; caption: a word under the Claude mark."""
+            corner=None, caption=None):
+    """corner: "top-right" or "bottom-left" for the GitHub mark; caption: a word under the Claude mark."""
     """view = (map x, map y) of the top-left corner; size = (width, height) in image px."""
     S = 2  # one map px = 2 x 2 image px
     W, H = size
@@ -411,7 +411,7 @@ def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stat
     left, top = 10 * PX, 8 * PX  # the left text block and the proof column share this top line
     mark, ms = 22, 3  # marks drawn on the nameplates' 3 px grid: fine enough to stay recognisable
     gm = github_mark(mark) if corner else None
-    col_x = W - left - col_w - (gm.shape[1] * ms + 6 * PX if corner else 0)
+    col_x = W - left - col_w - (gm.shape[1] * ms + 6 * PX if corner == "top-right" else 0)
 
     spans = []
     for h, x, y in walkers:
@@ -436,8 +436,10 @@ def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stat
         x = text_left(img, "[$]", x + (gap if k == 0 else 4 * PX), mid - 7 * op_s // 2, op_s)
 
     t_top = top + tm.shape[0] * ms + 6 * PX
-    if corner:  # same row and same outer margin as the equation, mirrored on the right
+    if corner == "top-right":  # same row and same outer margin as the equation, mirrored on the right
         paste_rgba(img, gm, W - left + ms - gm.shape[1] * ms, mid - gm.shape[0] * ms // 2, ms)
+    elif corner == "bottom-left":  # same left edge as the equation, same margin from the bottom as it has from the top
+        paste_rgba(img, gm, left - ms, H - top - gm.shape[0] * ms + ms, ms)
     if caption:  # centred under the Claude mark, in Claude's own colour
         cap_s, cap_top = 3, mid + cm.shape[0] * ms // 2 + 3 * PX
         draw_label(img, caption, left - ms + cm.shape[1] * ms // 2, cap_top, cap_s, rgb("#d97757"))
