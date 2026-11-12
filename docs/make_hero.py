@@ -380,7 +380,17 @@ def village(handles):
     return art, walkers
 
 
-def compose(view, size, handles, title_scale, sub_scale, col_w, name):
+def stats_column(img, col_x, top, col_w):
+    """The repo banner's proof column: the four number crops in docs/proof/."""
+    gap = 5 * PX
+    y = card(img, "rewards.png", col_x, top, col_w) + gap
+    y = card(img, "stats.png", col_x, y, col_w) + gap
+    half = (col_w - gap) // 2
+    card(img, "followers.png", col_x, y, half)
+    card(img, "completion.png", col_x + col_w - half, y, half)
+
+
+def compose(view, size, handles, title_scale, sub_scale, col_w, name, proof=stats_column, out=OUT):
     """view = (map x, map y) of the top-left corner; size = (width, height) in image px."""
     S = 2  # one map px = 2 x 2 image px
     W, H = size
@@ -417,14 +427,9 @@ def compose(view, size, handles, title_scale, sub_scale, col_w, name):
     text_left(img, "ORGANIC STORY ENGINE", left, t_top, title_scale)
     text_left(img, "YOUR AUDIENCE WRITES THE [CANON]", left, t_top + 7 * title_scale + 5 * PX, sub_scale)
 
-    gap = 5 * PX
-    y = card(img, "rewards.png", col_x, top, col_w) + gap
-    y = card(img, "stats.png", col_x, y, col_w) + gap
-    half = (col_w - gap) // 2
-    card(img, "followers.png", col_x, y, half)
-    card(img, "completion.png", col_x + col_w - half, y, half)
+    proof(img, col_x, top, col_w)
 
-    Image.fromarray(img).save(os.path.join(OUT, name), optimize=True)
+    Image.fromarray(img).save(os.path.join(out, name), optimize=True)
     print(name, W, "x", H)
 
 
