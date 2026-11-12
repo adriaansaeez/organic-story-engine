@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/hero.png" alt="Organic Story Engine: Claude plus TikTok equals money, pixel villagers with follower handles walking to a campfire, and the real stats of one episode: $49.84 in rewards, 45K views, 1.5K new followers" width="100%"></p>
+<p align="center"><img src="docs/hero.png" alt="Organic Story Engine: Claude plus TikTok equals money, a walled pixel village full of villagers, newcomers with follower handles walking in through the gate, and the real stats of one episode: $49.84 in rewards, 45K views, 1.5K new followers" width="100%"></p>
 
 **Organic Story Engine** is a kit for running a short-form series where every follower is a character,
 every comment is a story request and every episode ends with a vote that changes the world for good.

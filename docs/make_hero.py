@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""README hero image, built from the engine itself (deterministic).
+"""README banner, built from the engine itself (deterministic).
 
     python3 engine/tools/sprites.py --world examples/village/world
+    python3 examples/village/world/map/generate.py v5
     python3 docs/make_hero.py            ->  docs/hero.png (1600x640), docs/social.png (1280x640)
 
-Everything in the picture is the project's own material: the dusk backdrop comes
-from the example world's scene generator, the villagers are its profile sprites
-recoloured from invented handles with the census look algorithm, and every
-letter is drawn with the runtime's 5x7 pixel font (parsed from story.js), so the
-banner looks exactly like the videos. The Claude and TikTok marks are the real Simple Icons paths in
-docs/marks/, rasterised here onto the pixel grid; docs/proof/ holds the cropped stats screenshots.
+The background is the starter village at its last stage (map v5): the log wall with its towers and
+gate, the buildings, the cabins, the flock and a crowd of villagers at work, placed and depth-sorted the
+way the episodes draw them. Villagers are recoloured from handles with the census look algorithm, and
+every letter uses the runtime's 5x7 pixel font (parsed from story.js). The Claude and TikTok marks are
+the real Simple Icons paths in docs/marks/, rasterised onto the pixel grid; docs/proof/ holds the
+cropped stats screenshots.
 """
 import json
-import math
 import os
 import random
 import re
@@ -148,10 +148,10 @@ def frame(name, fr):
     return SHEETS[name][:, i * m["stride"]:i * m["stride"] + m["w"]].copy(), m["anchor"]
 
 
-def citizen(handle, fr):
+def citizen(handle, fr, family="perfil_"):
     r = mulberry(fnv(handle))
     st, sk, ha, tu = (int(r() * n) for n in (len(STYLES), len(SKIN), len(HAIR), len(TUNIC)))
-    spr, anchor = frame("perfil_" + STYLES[st], fr)
+    spr, anchor = frame(family + STYLES[st], fr)
     swap = {}
     for key, to in (("piel", SKIN[sk]), ("pelo", HAIR[ha]), ("tunica", TUNIC[tu])):
         for src, dst in zip(MAN["recolor"][key], to):
@@ -176,26 +176,6 @@ def paste(art, spr, x, y, anchor, flip=False):
             X, Y = x0 + i, y0 + j
             if spr[j, i, 3] and 0 <= X < art.shape[1] and 0 <= Y < art.shape[0]:
                 art[Y, X] = spr[j, i, :3]
-
-
-# ------------------------------------------------------------------ the scene
-def backdrop(aw):
-    sys.path.insert(0, WORLD)
-    import scenes_def as S  # the example world's scene generator
-    S.W = aw  # widen the side-view backdrop (same palette, same pines, deterministic)
-    return S.fondo(S.OCASO, random.Random(7), estrellas=True), S.SUELO
-
-
-def warm_light(art, cx, ground, rx, ry):
-    """Fire light pooled on the ground, in two dithered pixel steps (no halo in the air)."""
-    tint = np.array(rgb("#c98a3e"), np.float32)
-    for y in range(ground - ry, min(art.shape[0], ground + ry + 1)):
-        for x in range(max(0, cx - rx), min(art.shape[1], cx + rx + 1)):
-            d = ((x - cx) / rx) ** 2 + ((y - ground) / ry) ** 2
-            if d > 1 or y < ground - 2:
-                continue
-            k = 0.26 if d < 0.3 else (0.13 if d < 0.6 else (0.13 if (x + y) % 2 == 0 and d < 0.85 else 0.0))
-            art[y, x] = (art[y, x] * (1 - k) + tint * k).astype(np.uint8)
 
 
 # ------------------------------------------------------------------ the real marks, rasterised to the art grid
@@ -322,54 +302,109 @@ def card(img, name, x, y, w):
     return y + h
 
 
-def compose(aw, ah, crop_top, handles, fire_x, title_scale, sub_scale, col_w, name):
-    art, ground = backdrop(aw)
-    art = art[crop_top:crop_top + ah].copy()
-    g = ground - crop_top  # feet line inside the crop
-    W, H = aw * PX, ah * PX
+# ------------------------------------------------------------------ the village at its last stage (map v5)
+def village(handles):
+    """The whole v5 village on the map at 1 art px per map px: wall, buildings, cabins, pen, flock, fire
+    and a crowd of villagers at work, depth-sorted by their feet like the episodes draw it."""
+    maps = os.path.join(WORLD, "assets", "maps")
+    art = np.asarray(Image.open(os.path.join(maps, "map-v5.png")).convert("RGB")).copy()
+    P = json.load(open(os.path.join(maps, "map-v5.json")))["lugares"]
+    V, MU = P["v5"], P["v5"]["muralla"]
+    roles = MAN["oficios"]
+    items = []  # (feet y, x, sprite rgba, anchor, flip)
+
+    def add(name, fr, x, y, flip=False):
+        spr, an = frame(name, fr)
+        items.append((y, x, spr, an, flip))
+
+    for k, (x, y) in enumerate(P["casas"] + V["casas_nuevas"]):
+        add("cabana", "casa2" if k % 3 == 1 else "casa", x, y)
+    for n, fr in (("torre_mago", "torre"), ("escuela", "escuela"), ("taberna", "taberna"),
+                  ("herreria", "herreria"), ("enfermeria", "enfermeria")):
+        add(n, fr, *V["edificios"][n])
+    add("cercado", "cercado", *P["cercado"])
+    add("caldero", "c1", *P["caldero"])
+    rx, ry = P["rebano"]
+    for i, (dx, dy) in enumerate([(-14, -4), (-2, -12), (12, 2), (20, -10), (-8, 8)]):
+        add("oveja", "graze" if i % 2 else "walk1", rx + dx, ry + dy, flip=bool(i % 2))
+    add("fogata", "f1", P["fogata"][0], P["fogata"][1] + 2)
+    for x, y, k in MU["estacas"]:
+        add("estaca", "abc"[k], x, y)
+    for x, y in MU["torres"]:
+        add("torre_muro", "torre", x, y + 0.5)
+    add("puerta", "puerta", MU["puerta"][0], MU["puerta"][1] + 0.5)
+
+    # villagers: seeded spots inside the wall, never on a roof, a pen or the fire
+    blocked = [(x, y - 8, 21, 12) for x, y in P["casas"] + V["casas_nuevas"]]
+    half = {"torre_mago": (18, 16), "escuela": (33, 18), "taberna": (31, 16), "herreria": (28, 16), "enfermeria": (27, 15)}
+    blocked += [(x, y - h[1] + 4, h[0] + 2, h[1]) for n, (x, y) in V["edificios"].items() for h in [half[n]]]
+    blocked += [(P["cercado"][0], P["cercado"][1] - 8, 24, 12), (P["caldero"][0], P["caldero"][1] - 3, 10, 6),
+                (P["fogata"][0], P["fogata"][1], 12, 7), (rx + 3, ry - 2, 30, 14)]
+    (cx, cy), (wx, wy) = MU["centro"], MU["radios"]
+    rnd = random.Random(11)
+    spots, tries = [], 0
+    while len(spots) < 190 and tries < 20000:
+        tries += 1
+        x, y = cx + rnd.uniform(-1, 1) * wx * 0.9, cy + rnd.uniform(-1, 1) * wy * 0.88
+        if ((x - cx) / (wx * 0.9)) ** 2 + ((y - cy) / (wy * 0.88)) ** 2 > 1:
+            continue
+        if any(((x - bx) / bw) ** 2 + ((y - by) / bh) ** 2 < 1 for bx, by, bw, bh in blocked):
+            continue
+        if any(abs(x - sx) < 7 and abs(y - sy) < 5 for sx, sy in spots):
+            continue
+        spots.append((x, y))
+    names = list(roles)
+    for i, (x, y) in enumerate(spots):
+        role = names[i % len(names)]
+        fr = roles[role][i % 2] if i % 3 else ("walk1", "walk2", "stand")[i % 3]
+        spr, an = citizen(f"v{i:03d}", fr, "ciudadano_")
+        items.append((y, x, spr, an, bool(rnd.random() < 0.5)))
+
+    # the newcomers: followers walking in through the gate, towards the fire
+    path = P["sendero"]  # from the fire down through the gate
+    def on_path(y):
+        for (x0, y0), (x1, y1) in zip(path, path[1:]):
+            if y0 <= y <= y1:
+                return x0 + (x1 - x0) * (y - y0) / (y1 - y0)
+        return path[-1][0]
+    walkers = []
+    for i, h in enumerate(handles):
+        y = MU["puerta"][1] - 14 - i * 26  # spaced so each nameplate clears the one above it
+        x = on_path(y) + (5 if i % 2 else -5)
+        spr, an = citizen(h, ("back1", "back2")[i % 2], "ciudadano_")
+        items.append((y, x, spr, an, False))
+        walkers.append((h, x, y))
+
+    for y, x, spr, an, flip in sorted(items, key=lambda t: (t[0], t[1])):
+        paste(art, spr, x, y, an, flip)
+    return art, walkers
+
+
+def compose(view, size, handles, title_scale, sub_scale, col_w, name):
+    """view = (map x, map y) of the top-left corner; size = (width, height) in image px."""
+    S = 2  # one map px = 2 x 2 image px
+    W, H = size
+    art, walkers = village(handles)
+    mx, my = view
+    img = np.repeat(np.repeat(art[my:my + H // S, mx:mx + W // S], S, 0), S, 1).copy()
     left, top = 10 * PX, 8 * PX  # the left text block and the proof column share this top line
     col_x = W - left - col_w
 
-    # the fire, its light on the ground, the first villager waiting by it
-    warm_light(art, fire_x, g + 1, 26, 5)
-    fire, fa = frame("fogata", "f1")
-    paste(art, fire, fire_x, g + 1, fa)
-
-    # the procession: followers walking in from the left edge, towards the fire
-    walkers = []
-    spacing = (fire_x - 40) / len(handles)
-    for i, h in enumerate(handles):
-        x = 20 + i * spacing
-        spr, an = citizen(h, ("walk1", "stand", "walk2")[i % 3])
-        paste(art, spr, x, g, an)
-        walkers.append((h, x))
-    host, an = citizen("the_founder", "talk1")
-    paste(art, host, fire_x + 14, g, an, flip=True)
-
-    # stars behind the text block would read as punctuation: clear them there only
-    title_w = measure("ORGANIC STORY ENGINE") * title_scale
-    band = art[4:60, :(left + title_w) // PX + 4]
-    lum = band.astype(int).sum(2)
-    for y, x in zip(*np.nonzero(lum > 520)):
-        band[y, x] = band[y, x - 1] if x else band[y, x + 1]
-
-    img = np.repeat(np.repeat(art, PX, 0), PX, 1)
-
     spans = []
-    for h, x in walkers:
-        draw_tag(img, h, int(x * PX), int((g - 18) * PX), 3)
+    for h, x, y in walkers:
+        cx, bottom = int((x - mx) * S), int((y - my - 17) * S)
+        draw_tag(img, h, cx, bottom, 3)
         half = (sum(len((L.get(c) or G.get(c.upper()) or G[" "])[0]) + 1 for c in h) + 3) * 3 // 2
-        spans.append((int(x * PX) - half, int(x * PX) + half))
-    for (_, r), (l2, _) in zip(spans, spans[1:]):
-        assert l2 - r >= 12, "two nameplates touch"
-    draw_tag(img, "the_founder", int((fire_x + 14) * PX), int((g - 18) * PX), 3)
-    assert (fire_x + 14) * PX + 100 < col_x - PX, "the founder's nameplate runs under the proof column"
+        spans.append((bottom, cx - half, cx + half))
+    for (b1, l1, r1), (b2, l2, r2) in zip(spans, spans[1:]):
+        assert abs(b1 - b2) >= 9 * 3 + 12 or l2 > r1 or l1 > r2, "two nameplates overlap"
+        assert cx + half < col_x - PX, "a nameplate runs under the proof column"
 
-    # top left: Claude + TikTok = $$$, the marks on the same pixel grid as the type
-    mark, ms = 22, 3  # marks drawn on the nameplates' 3 px grid: fine enough to stay recognisable
-    op_s = 2 * PX  # operator glyphs: 7 rows x 10 px = 70 px, about the marks' height
+    # top left: Claude + TikTok = $$$, the marks on the nameplates' 3 px grid
+    mark, ms = 22, 3
+    op_s = 2 * PX
     cm, tm = claude_mark(mark), tiktok_mark(mark)
-    mid = top + (tm.shape[0] * ms) // 2  # vertical centre of the row
+    mid = top + (tm.shape[0] * ms) // 2
     x = paste_rgba(img, cm, left - ms, mid - cm.shape[0] * ms // 2, ms)
     gap = 6 * PX
     x = text_left(img, "+", x + gap, mid - 7 * op_s // 2, op_s)
@@ -378,12 +413,10 @@ def compose(aw, ah, crop_top, handles, fire_x, title_scale, sub_scale, col_w, na
     for k in range(3):  # three separate coins, each with its own outline and air around it
         x = text_left(img, "[$]", x + (gap if k == 0 else 4 * PX), mid - 7 * op_s // 2, op_s)
 
-    # title + line, left-aligned under the equation
     t_top = top + tm.shape[0] * ms + 6 * PX
     text_left(img, "ORGANIC STORY ENGINE", left, t_top, title_scale)
     text_left(img, "YOUR AUDIENCE WRITES THE [CANON]", left, t_top + 7 * title_scale + 5 * PX, sub_scale)
 
-    # right: the real numbers of one video, stacked as a pinned board
     gap = 5 * PX
     y = card(img, "rewards.png", col_x, top, col_w) + gap
     y = card(img, "stats.png", col_x, y, col_w) + gap
@@ -396,6 +429,6 @@ def compose(aw, ah, crop_top, handles, fire_x, title_scale, sub_scale, col_w, na
 
 
 if __name__ == "__main__":
-    folks = ["luna_n", "pixelpau", "koldo.h", "ana.mil", "brujo.e"]
-    compose(320, 128, 44, folks[:4], 160, 8, 4, 500, "hero.png")
-    compose(256, 128, 44, ["luna_n", "koldo.h", "ana.mil"], 124, 6, 3, 400, "social.png")
+    folks = ["luna_n", "pixelpau", "koldo.h", "ana.mil"]
+    compose((642, 450), (1600, 640), folks, 8, 4, 500, "hero.png")
+    compose((640, 450), (1280, 640), folks[:3], 6, 3, 400, "social.png")
