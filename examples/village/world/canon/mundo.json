@@ -1,0 +1,180 @@
+{
+ "mapa": {
+  "version_actual": "v3",
+  "archivo": "assets/maps/map-v3.png",
+  "datos": "assets/maps/map-v3.js (window.OSE_MAP: places with coordinates)",
+  "generador": "map/generate.py",
+  "tamano": [
+   1920,
+   1080
+  ],
+  "escala": "1 art px = 10 cm. A villager is 16 px tall (1.6 m); pines 60-90 px; houses 50-80 px.",
+  "nota": "Never overwrite a published version. An episode that changes the world adds an entry to VERSIONS and renders vN+1.",
+  "historial": {
+   "v3": "starting map: a clearing with a fire pit and two distant kingdoms"
+  }
+ },
+ "lugares": {
+  "banco_oeste": [
+   942,
+   534
+  ],
+  "banco_este": [
+   976,
+   533
+  ],
+  "fogata": [
+   960,
+   543
+  ],
+  "claro": {
+   "centro": [
+    960,
+    528
+   ],
+   "radios": [
+    222,
+    173
+   ],
+   "radios_inicio": [
+    128,
+    100
+   ]
+  },
+  "sendero": [
+   [
+    960,
+    556
+   ],
+   [
+    954,
+    600
+   ],
+   [
+    942,
+    660
+   ],
+   [
+    928,
+    740
+   ],
+   [
+    918,
+    830
+   ],
+   [
+    908,
+    930
+   ],
+   [
+    900,
+    1080
+   ]
+  ],
+  "arbolito_talado": {
+   "pos": [
+    914,
+    527
+   ],
+   "desde": "start",
+   "estado": "tocon"
+  },
+  "tronco": {
+   "pos": [
+    902,
+    536
+   ],
+   "desde": "start"
+  },
+  "arbusto_bayas": {
+   "pos": [
+    1002,
+    527
+   ],
+   "desde": "start",
+   "estado": "vacio"
+  },
+  "bayas_sin_probar": {
+   "pos": [
+    974,
+    558
+   ],
+   "desde": "start"
+  },
+  "reino_industria_chimeneas": [
+   [
+    88,
+    537
+   ],
+   [
+    239,
+    586
+   ],
+   [
+    381,
+    586
+   ],
+   [
+    616,
+    591
+   ]
+  ],
+  "reino_industria": [
+   300,
+   830
+  ],
+  "reino_montana": [
+   1640,
+   250
+  ],
+  "reino_selva": {
+   "centro": [
+    1640,
+    860
+   ],
+   "revelado": false
+  }
+ },
+ "camaras": {
+  "_formato": "[centre_x, centre_y, visible_width] in map px; height = width * 16/9",
+  "mundo": [
+   960,
+   540,
+   607.5
+  ],
+  "claro": [
+   960,
+   535,
+   170
+  ],
+  "fogata_cerca": [
+   966,
+   546,
+   150
+  ],
+  "reino_industria": [
+   [
+    304,
+    640,
+    340
+   ],
+   [
+    312,
+    628,
+    300
+   ]
+  ],
+  "reino_montana": [
+   [
+    1680,
+    350,
+    340
+   ],
+   [
+    1690,
+    336,
+    300
+   ]
+  ]
+ }
+}

@@ -1,0 +1,29 @@
+# secrets
+.env
+.dev.vars
+
+# local data: real followers and comments never go in git
+audience.db
+audience.db-*
+data/
+
+# generated (rebuild with the engine)
+**/kit/
+examples/*/world/assets/sprites/
+examples/*/world/assets/fx/
+examples/*/world/assets/scenes/
+examples/*/world/assets/landmarks/
+**/assets/audio/
+**/.voice-cache/
+**/.hyperframes/
+voice.json
+output/
+
+# tooling
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+
+# your own series while trying the kit
+my-series/

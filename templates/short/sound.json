@@ -1,0 +1,13 @@
+{
+ "duration": 25,
+ "beds": [
+  {"type": "wind", "t0": 0, "t1": 25, "gain": 0.14, "fade_in": 0.3, "fade_out": 1.5},
+  {"type": "warm", "t0": 5, "t1": 13, "gain": 0.14, "fade_in": 0.5, "fade_out": 0.6},
+  {"type": "tense", "t0": 13, "t1": 21, "gain": 0.16, "fade_in": 0.3, "fade_out": 0.5, "bpm": 120}
+ ],
+ "cues": [
+  {"t": 0.1, "sfx": "stinger", "gain": 0.45, "f": 523},
+  {"t": 2.0, "sfx": "blip", "gain": 0.35},
+  {"t": 16.0, "sfx": "whoosh", "gain": 0.4}
+ ]
+}

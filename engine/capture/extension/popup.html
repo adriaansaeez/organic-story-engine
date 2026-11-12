@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>OSE Follower Capture</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="iconos/icono-48.png" width="24" height="24" alt="">
+    <h1>Follower capture</h1>
+  </header>
+
+  <section class="cuenta" aria-live="polite">
+    <p><b id="n">0</b> <span id="n-texto">followers captured</span></p>
+    <p id="rango" class="tenue"></p>
+    <p id="aviso" class="tenue"></p>
+  </section>
+
+  <section id="fuera" class="bloque" hidden>
+    <p>Open TikTok, signed in as your series account, in this tab to collect.</p>
+    <button id="abrir" type="button">Open TikTok</button>
+  </section>
+
+  <section id="dentro" class="bloque" hidden>
+    <button id="recoger" type="button">Collect followers</button>
+    <p id="estado" class="tenue" role="status"></p>
+  </section>
+
+  <section class="bloque">
+    <label for="despues">Only those who followed after</label>
+    <input id="despues" type="text" placeholder="@last handle in the census (optional)" autocomplete="off" spellcheck="false">
+    <button id="descargar" type="button" class="tonal">Download JSON</button>
+    <p id="error" class="error" role="alert"></p>
+  </section>
+
+  <footer>
+    <button id="vaciar" type="button" class="quieto">Clear captured</button>
+  </footer>
+
+  <script src="extraer.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

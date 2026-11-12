@@ -1,0 +1,98 @@
+/* Organic Story Engine runtime styles, shared by every episode. */
+.ose-cam,
+.ose-world,
+.ose-screen {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.ose-screen {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 10;
+}
+.ose-map,
+.ose-sprite,
+.ose-fog,
+.ose-label canvas,
+.ose-tag canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.ose-map {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+}
+.ose-sprite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-repeat: no-repeat;
+  will-change: transform;
+}
+.ose-icon {
+  z-index: 5;
+}
+.ose-label {
+  position: absolute;
+  z-index: 6;
+  line-height: 0;
+}
+.ose-label canvas {
+  display: block;
+}
+.ose-fog {
+  position: absolute;
+  inset: -40px;
+  background-repeat: repeat;
+}
+/* Stepped rings instead of a smooth gradient: reads as pixel-art lighting and never bands. */
+.ose-night {
+  position: absolute;
+  left: -900px;
+  top: -500px;
+  width: 2880px;
+  height: 2920px;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(6, 8, 6, 0) 0 9%,
+    rgba(6, 8, 6, 0.28) 9% 12%,
+    rgba(6, 8, 6, 0.5) 12% 15%,
+    rgba(6, 8, 6, 0.68) 15% 19%,
+    rgba(6, 8, 6, 0.82) 19% 100%
+  );
+  z-index: 2;
+}
+/* Campfire light pooled on the ground, stepped like the night rings. */
+.ose-firelight {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 120px;
+  height: 104px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(255, 196, 92, 0.42) 0 22%,
+    rgba(255, 170, 70, 0.26) 22% 40%,
+    rgba(255, 150, 60, 0.12) 40% 62%,
+    rgba(255, 150, 60, 0) 62%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+/* Player name tag (Minecraft-style), sized and counter-scaled by the runtime. */
+.ose-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 0;
+  pointer-events: none;
+}
+.ose-tag canvas {
+  display: block;
+}

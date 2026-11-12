@@ -1,0 +1,76 @@
+{
+ "notice_lists": [
+  {
+   "group": 7,
+   "has_more": 1,
+   "total": 453,
+   "max_time": 1794168920,
+   "min_time": 1794157488,
+   "notice_list": [
+    {
+     "create_time": 1794168920,
+     "type": 33,
+     "follow": {
+      "from_user": {
+       "unique_id": "molinera_ana",
+       "nickname": "Molinera"
+      }
+     }
+    },
+    {
+     "create_time": 1794168820,
+     "type": 33,
+     "follow": {
+      "from_user": {
+       "unique_id": "Herrero.Koldo",
+       "nickname": "Koldo"
+      }
+     }
+    },
+    {
+     "create_time": 1794157488,
+     "type": 33,
+     "follow": {
+      "from_user": {
+       "unique_id": "luna.del.norte",
+       "nickname": "Luna"
+      }
+     }
+    },
+    {
+     "create_time": 1794150000,
+     "type": 33,
+     "follow": {
+      "from_user": {
+       "unique_id": "herrero.koldo",
+       "nickname": "Koldo"
+      }
+     }
+    },
+    {
+     "create_time": 1794150001,
+     "type": 33,
+     "follow": null
+    }
+   ]
+  },
+  {
+   "group": 2,
+   "has_more": 0,
+   "total": 9,
+   "notice_list": [
+    {
+     "create_time": 1794160000,
+     "type": 41,
+     "digg": {
+      "from_user": [
+       {
+        "unique_id": "not_a_follow"
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

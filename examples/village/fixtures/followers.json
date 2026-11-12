@@ -1,0 +1,11 @@
+{
+  "batch": "fixture",
+  "followers": [
+    {"handle": "luna.del.norte", "name": "Luna", "ts": 1731000300},
+    {"handle": "@Pixel_Pablo", "ts": 1731000100},
+    {"handle": "molinera_ana", "ts": 1731000200},
+    "herrero.koldo",
+    {"handle": "not a valid handle!"},
+    {"handle": "pixel_pablo", "ts": 1731000400}
+  ]
+}

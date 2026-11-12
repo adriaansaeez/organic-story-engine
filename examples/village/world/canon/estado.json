@@ -1,0 +1,28 @@
+{
+ "_nota": "Seed canon: the world before the first episode. Keys are fixed (the skills read them); values are in your series' language. Each published episode updates this file.",
+ "ultimo_capitulo": 0,
+ "seguidores": 0,
+ "seguidores_nota": "The live census is audience.db (table citizens); this is the number the last episode told.",
+ "habitantes": [],
+ "animales": [],
+ "edificios": [],
+ "props": [
+  "fire pit (lit)",
+  "a log to sit on",
+  "a berry bush"
+ ],
+ "recursos": {
+  "wood": 0,
+  "food": 0,
+  "water": 0
+ },
+ "rumbos": {
+  "harmony": 0,
+  "power": 0
+ },
+ "votacion_abierta": null,
+ "votaciones_cerradas": [],
+ "ganchos": [
+  "Beyond the fog, two great kingdoms are watching."
+ ]
+}

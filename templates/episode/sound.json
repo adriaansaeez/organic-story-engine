@@ -1,0 +1,15 @@
+{
+ "duration": 30,
+ "beds": [
+  {"type": "wind", "t0": 0, "t1": 30, "gain": 0.16, "fade_in": 0.3, "fade_out": 1.5},
+  {"type": "crackle", "t0": 0, "t1": 30, "gain": 0.07, "fade_in": 0.6, "fade_out": 1.5, "rate": 12},
+  {"type": "tense", "t0": 18, "t1": 24, "gain": 0.18, "fade_in": 0.3, "fade_out": 0.4, "bpm": 110},
+  {"type": "warm", "t0": 24, "t1": 30, "gain": 0.16, "fade_in": 0.4, "fade_out": 1.2}
+ ],
+ "cues": [
+  {"t": 0.15, "sfx": "stinger", "gain": 0.5, "f": 494},
+  {"t": 12.6, "sfx": "chop", "gain": 0.3},
+  {"t": 13.6, "sfx": "chop", "gain": 0.3},
+  {"t": 24.0, "sfx": "bell", "gain": 0.4}
+ ]
+}

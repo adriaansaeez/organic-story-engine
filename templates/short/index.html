@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Short · template</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="kit/lib/story.css" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #0e1a10; }
+      #root, #stage { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden; }
+      .scene, .scene-set, .scene-bg { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      .scene { overflow: hidden; z-index: 4; background: #0e1a10; }
+      .scene-bg, .scene-tag canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+      .scene-tag { position: absolute; left: 0; top: 0; line-height: 0; }
+    </style>
+  </head>
+  <body>
+    <!--
+      SHORT TEMPLATE: a closed 25–45 s story from ONE comment, at ground level.
+      Beats: hook (the comment, verbatim, with its @) -> setup -> twist -> payoff.
+      Replace every TODO, keep times in sync with voice.json (engine/tools/voice.py),
+      then: engine/tools/sync_world.sh <world> <this dir> && npm run check.
+    -->
+    <div id="root" data-composition-id="main" data-start="0" data-duration="25" data-width="1080" data-height="1920">
+      <div id="stage" class="clip" data-start="0" data-duration="25" data-track-index="0"></div>
+      <!-- TODO after voice.py: <audio id="vo" src="assets/audio/narration.wav" data-start="0" data-duration="<voice.json duration>" data-track-index="1"></audio> -->
+      <audio id="bed" src="assets/audio/ambience.wav" data-start="0" data-duration="25" data-track-index="2" data-volume="0.8"></audio>
+    </div>
+
+    <script src="kit/assets/sprites/manifest.js"></script>
+    <script src="kit/assets/maps/map-v3.js"></script>
+    <script src="kit/lib/story.js"></script>
+    <script>
+      const END = 25;
+      const MAP = window.OSE_MAP;
+      const MAN = window.OSE_MANIFEST;
+      const tl = gsap.timeline({ paused: true });
+      const W = OSE.world({
+        tl,
+        stage: document.getElementById("stage"),
+        manifest: MAN,
+        base: "kit/",
+        map: { src: "assets/maps/map-v3.png", w: MAP.w, h: MAP.h },
+        spriteScale: 1,
+      });
+
+      // TODO: the comment this short answers, verbatim, and who is in it.
+      const HERO = "molinera_ana";
+      const FRIEND = "herrero.koldo";
+      const T = { title: 0, hook: 2, setup: 5, twist: 13, payoff: 21 };
+
+      // ------------------------------------------------ citizen looks: same handle, same look, everywhere
+      // Matches engine/audience/roles.py look_seed (FNV-1a). Palettes are this world's; edit for yours.
+      const SKIN = [["#f0c7a4", "#d29a73"], ["#e6ad80", "#c4865d"], ["#b97a52", "#8f5a39"], ["#7d4f33", "#5a3622"]];
+      const HAIR = [["#8a4d22", "#5c3016"], ["#3a2618", "#241710"], ["#d9a640", "#a8772a"], ["#b5532a", "#7f3519"],
+        ["#a9a39a", "#77716a"], ["#1f1a18", "#120e0c"]];
+      const TUNIC = [["#b4492f", "#7f2f20"], ["#5f8d3d", "#3f6328"], ["#4a5f8f", "#33425f"], ["#c99a2e", "#8e6b1c"],
+        ["#cdb991", "#9c8a65"], ["#7a5233", "#53371f"], ["#3f8079", "#2b5853"], ["#8c2f45", "#5f1f2e"]];
+      const STYLES = ["corto", "largo", "capucha"];
+      function seed(u) {
+        let h = 2166136261;
+        for (const c of u) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); }
+        return h >>> 0;
+      }
+      function rand(s) { // mulberry32: deterministic
+        let a = s >>> 0;
+        return () => {
+          a = (a + 0x6d2b79f5) >>> 0;
+          let t = a;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      function look(handle) {
+        const r = rand(seed(handle));
+        return [Math.floor(r() * STYLES.length), Math.floor(r() * SKIN.length), Math.floor(r() * HAIR.length), Math.floor(r() * TUNIC.length)];
+      }
+      const recolours = [];
+      window.addEventListener("DOMContentLoaded", () => {
+        const IMG = {};
+        const hex = (h) => parseInt(h.slice(1), 16);
+        const R = MAN.recolor;
+        const sheets = [...new Set(recolours.map((r) => r[1]))];
+        let pending = sheets.length;
+        const paint = () => recolours.forEach(([actor, sheet, [, sk, ha, tu]]) => {
+          const src = IMG[sheet];
+          const c = document.createElement("canvas");
+          c.width = src.width;
+          c.height = src.height;
+          const x = c.getContext("2d");
+          x.drawImage(src, 0, 0);
+          const im = x.getImageData(0, 0, c.width, c.height);
+          const map = new Map();
+          [[R.piel, SKIN[sk]], [R.pelo, HAIR[ha]], [R.tunica, TUNIC[tu]]].forEach(([from, to]) =>
+            from.forEach((d, i) => map.set(hex(d), hex(to[i]))));
+          const p = im.data;
+          for (let i = 0; i < p.length; i += 4) {
+            if (!p[i + 3]) continue;
+            const n = map.get((p[i] << 16) | (p[i + 1] << 8) | p[i + 2]);
+            if (n !== undefined) { p[i] = n >> 16; p[i + 1] = (n >> 8) & 255; p[i + 2] = n & 255; }
+          }
+          x.putImageData(im, 0, 0);
+          actor.el.style.backgroundImage = `url(${c.toDataURL()})`;
+        });
+        sheets.forEach((s) => {
+          const im = new Image();
+          im.onload = () => { IMG[s] = im; if (--pending === 0) paint(); };
+          im.src = "kit/" + MAN.sprites[s].file;
+        });
+      });
+
+      // ------------------------------------------------ ground-level scenes (side view; 1 art px = 10 screen px)
+      const S = 10;
+      function scene(bg, wins) {
+        const box = document.createElement("div");
+        box.className = "scene";
+        W.screen.appendChild(box);
+        const set = document.createElement("div");
+        set.className = "scene-set";
+        set.setAttribute("data-layout-allow-overflow", ""); // zoomed backdrop is clipped by .scene on purpose
+        box.appendChild(set);
+        const img = document.createElement("img");
+        img.src = "kit/assets/scenes/" + bg + ".png";
+        img.className = "scene-bg";
+        set.appendChild(img);
+        gsap.set(box, { autoAlpha: 0 });
+        gsap.set(set, { transformOrigin: "0px 0px" });
+        for (let i = 0; i < wins.length; i += 2) tl.set(box, { autoAlpha: 1 }, wins[i]).set(box, { autoAlpha: 0 }, wins[i + 1]);
+        return set;
+      }
+      // keep art point (ax, ay) at screen (540, sy) with zoom z; the backdrop always fills the frame
+      function frame(set, t, dur, ax, ay, z, sy, ease) {
+        const v = { x: 540 - ax * S * z, y: (sy || 1260) - ay * S * z, scale: z };
+        v.x = Math.min(0, Math.max(1080 - 1080 * z, v.x));
+        v.y = Math.min(0, Math.max(1920 - 1920 * z, v.y));
+        if (dur) tl.to(set, { ...v, duration: dur, ease: ease || "power2.inOut" }, t);
+        else tl.set(set, v, t);
+      }
+      const piece = (set, name, ax, ay, opt) => W.actor(name, ax * S, ay * S, { parent: set, scale: S, ...(opt || {}) });
+      // a citizen in profile; sheet ending in "_" gets the citizen's own hair style appended
+      function citizen(set, handle, sheet, ax, ay, opt) {
+        const l = look(handle);
+        const name = sheet.endsWith("_") ? sheet + STYLES[l[0]] : sheet;
+        const a = piece(set, name, ax, ay, opt);
+        recolours.push([a, name, l]);
+        return a;
+      }
+      // the handle over a head, moving with the scene
+      function tag(set, handle, ax, ay, wins) {
+        const c = OSE.tagCanvas(handle);
+        const d = document.createElement("div");
+        d.className = "scene-tag";
+        c.style.width = c.width * 2.6 + "px";
+        c.style.height = c.height * 2.6 + "px";
+        d.appendChild(c);
+        set.appendChild(d);
+        gsap.set(d, { x: ax * S, y: ay * S, xPercent: -50, yPercent: -100, zIndex: 100000, autoAlpha: 0 });
+        for (let i = 0; i < wins.length; i += 2) tl.set(d, { autoAlpha: 1 }, wins[i]).set(d, { autoAlpha: 0 }, wins[i + 1]);
+        return { move: (t, dur, x, y, ease) => tl.to(d, { x: x * S, y: y * S, duration: dur, ease: ease || "none" }, t) };
+      }
+      function effect(set, name, frames, ax, ay, t, fps) {
+        const e = piece(set, name, ax, ay, { frame: frames[0], hidden: true });
+        const end = +(t + frames.length / fps).toFixed(3);
+        e.show(t).loop(t, end, frames, fps).hide(end);
+        return e;
+      }
+
+      // ================================================= title + hook (0–5): the map, then the comment verbatim
+      W.cam.cut(0, [960, 540, 607.5]);
+      W.cam.move(0, T.setup, [960, 535, 300], "sine.inOut");
+      W.label("SHORT [#1]", { at: T.title + 0.1, until: T.hook, y: 900, scale: 12 }); // TODO: your series' short title
+      W.label("@" + HERO.toUpperCase(), { at: T.hook, until: T.setup, y: 760, scale: 6 });
+      W.label("THE COMMENT,\n[VERBATIM]", { at: T.hook + 0.2, until: T.setup, y: 960, scale: 9 }); // TODO
+
+      // ================================================= setup (5–13): the hero tries what they asked for
+      const meadow = scene("prado_dia", [T.setup, END]);
+      frame(meadow, T.setup, 0, 54, 150, 1.6, 1300);
+      frame(meadow, T.setup, 8, 60, 150, 2.2, 1300, "sine.inOut");
+      const hero = citizen(meadow, HERO, "perfil_", 20, 150, { frame: "stand" });
+      hero.move(T.setup, 3, 50 * S, 150 * S).loop(T.setup, T.setup + 3, ["walk1", "stand", "walk2", "stand"], 6);
+      tag(meadow, HERO, 20, 133, [T.setup, END]).move(T.setup, 3, 50, 133);
+      hero.loop(T.setup + 3.5, T.twist, ["chop_up", "chop_down"], 4); // TODO: the action they asked for
+      W.label("TODO: SETUP", { at: T.setup + 0.5, until: T.twist, y: 360, scale: 9 });
+
+      // ================================================= twist (13–21): it goes wrong; someone from the thread walks in
+      const friend = citizen(meadow, FRIEND, "perfil_", 104, 150, { frame: "stand" });
+      friend.flip(0, true);
+      friend.move(T.twist, 2.5, 72 * S, 150 * S).loop(T.twist, T.twist + 2.5, ["walk1", "stand", "walk2", "stand"], 6);
+      tag(meadow, FRIEND, 104, 133, [T.twist, END]).move(T.twist, 2.5, 72, 133);
+      effect(meadow, "puf", ["p0", "p1", "p2"], 61, 150, T.twist + 3, 6);
+      hero.loop(T.twist + 3.5, T.payoff, ["talk1", "talk2"], 3);           // they argue it out
+      friend.loop(T.twist + 3.8, T.payoff, ["talk1", "stand", "talk2"], 3);
+      frame(meadow, T.twist + 3.5, T.payoff - T.twist - 3.5, 61, 150, 2.6, 1300, "sine.inOut");
+      W.label("TODO: [TWIST]", { at: T.twist + 0.4, until: T.payoff, y: 360, scale: 9 });
+
+      // ================================================= payoff (21–25): closed. Last card asks for the next story
+      frame(meadow, T.payoff, 1.2, 61, 150, 1.6, 1300, "power2.out");
+      W.label("ASK FOR YOUR STORY\nIN THE [COMMENTS]", { at: T.payoff + 0.6, y: 1650, scale: 7 }); // TODO: your language
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

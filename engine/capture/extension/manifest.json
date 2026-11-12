@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "OSE Follower Capture",
+  "version": "1.0.0",
+  "description": "Collects new TikTok followers (with their exact follow time) from your own notifications and exports them as JSON for the Organic Story Engine census.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.tiktok.com/*"],
+  "action": {
+    "default_title": "OSE Follower Capture",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "iconos/icono-16.png", "48": "iconos/icono-48.png", "128": "iconos/icono-128.png" }
+  },
+  "icons": { "16": "iconos/icono-16.png", "48": "iconos/icono-48.png", "128": "iconos/icono-128.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.tiktok.com/*"],
+      "js": ["escucha.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.tiktok.com/*"],
+      "js": ["extraer.js", "puente.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

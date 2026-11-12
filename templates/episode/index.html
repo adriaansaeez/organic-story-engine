@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Episode · template</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="kit/lib/story.css" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #1a2414; }
+      #root, #stage { position: absolute; inset: 0; width: 1080px; height: 1920px; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <!--
+      EPISODE TEMPLATE. The contract of every episode:
+        1. the FIRST wide shot shows the result of the last vote (canon/estado.json -> votaciones_cerradas),
+        2. the middle advances the world with the people who asked for things (audience.py comments),
+        3. the LAST shot opens the next vote and holds the options for 2+ seconds.
+      Replace every TODO. Pin each beat to voice.json (engine/tools/voice.py), then
+      engine/tools/sync_world.sh <world> <this dir> && npm run check && npx hyperframes snapshot --at ...
+    -->
+    <div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1080" data-height="1920">
+      <div id="stage" class="clip" data-start="0" data-duration="30" data-track-index="0"></div>
+      <!-- TODO after voice.py: <audio id="vo" src="assets/audio/narration.wav" data-start="0" data-duration="<voice.json duration>" data-track-index="1"></audio> -->
+      <audio id="bed" src="assets/audio/ambience.wav" data-start="0" data-duration="30" data-track-index="2" data-volume="0.8"></audio>
+    </div>
+
+    <script src="kit/assets/sprites/manifest.js"></script>
+    <script src="kit/assets/maps/map-v3.js"></script>
+    <script src="kit/lib/story.js"></script>
+    <script>
+      const END = 30;
+      const MAP = window.OSE_MAP;
+      const tl = gsap.timeline({ paused: true });
+      const W = OSE.world({
+        tl,
+        stage: document.getElementById("stage"),
+        manifest: window.OSE_MANIFEST,
+        base: "kit/",
+        map: { src: "assets/maps/map-v3.png", w: MAP.w, h: MAP.h },
+        spriteScale: 1,
+      });
+
+      // Beats on the film clock. Copy the starts from voice.json once the narration exists.
+      const T = { result: 0, world: 4, people: 10, problem: 18, vote: 24 };
+      // Cameras are [centre x, centre y, visible width] in map pixels (height = width * 16/9).
+      const [FX, FY] = MAP.lugares.fogata; // TODO: your world's anchor place (canon/mundo.json)
+      const at = (dx, dy) => [FX + dx, FY + dy];
+      const CAM = { world: [960, 540, 607.5], camp: [...at(0, -8), 170], close: [...at(6, 3), 140] };
+
+      // ------------------------------------------------ props that persist from earlier episodes (from canon)
+      const fire = W.actor("fogata", ...at(0, 2), { frame: "f0" });
+      fire.loop(0, END, ["f0", "f1", "f2", "f3"], 8);
+      W.fireLight(FX, FY, 0, END, 42, 27);
+
+      // ================================================= 1 · result of the last vote, in the first wide shot
+      W.cam.cut(T.result, CAM.world);
+      W.cam.move(T.result + 0.4, T.world - T.result - 0.4, CAM.camp, "power2.inOut");
+      W.label("TODO: LAST VOTE\n[RESULT]", { at: T.result + 0.2, until: T.world, y: 360, scale: 9 });
+
+      // ================================================= 2 · the world moves on
+      W.cam.move(T.world, 2.4, [960, 540, 420], "sine.inOut");
+      W.label("TODO: WHAT CHANGED", { at: T.world + 0.4, until: T.people, y: 1500, scale: 8 });
+
+      // ================================================= 3 · people from the comments, with their nicks
+      // Handles come from: python3 engine/audience/audience.py comments <prev episode>
+      W.cam.cut(T.people, CAM.close);
+      const a = W.actor("habitante1", ...at(-60, 30), { frame: "stand" }).nameplate("first_follower");
+      const b = W.actor("habitante2", ...at(60, 34), { frame: "stand" }).nameplate("second_follower");
+      b.flip(T.people, true);
+      a.move(T.people, 2.2, ...at(-34, 10)).loop(T.people, T.people + 2.2, ["walk1", "stand", "walk2", "stand"], 6);
+      b.move(T.people, 2.2, ...at(34, 12)).loop(T.people, T.people + 2.2, ["walk1", "stand", "walk2", "stand"], 6);
+      a.loop(T.people + 2.6, T.problem, ["chop_up", "chop_down"], 4);
+      W.label("TODO: WHO DID [WHAT]", { at: T.people + 0.4, until: T.problem, y: 1460, scale: 8 });
+
+      // ================================================= 4 · the new problem
+      W.cam.move(T.problem, 1.6, CAM.camp, "power2.out");
+      W.label("TODO: THE NEW\n[PROBLEM]", { at: T.problem + 0.3, until: T.vote, y: 1440, scale: 9 });
+
+      // ================================================= 5 · the vote: two options, held still
+      W.label("TODO: THE [QUESTION]?", { at: T.vote, y: 330, scale: 8 });
+      W.label("OPTION A", { at: T.vote + 0.2, x: 270, y: 1410, scale: 8 });
+      W.label("OPTION B", { at: T.vote + 0.5, x: 810, y: 1410, scale: 8 });
+      W.label("VOTE IN THE\nPINNED [COMMENT]", { at: T.vote + 1.0, y: 1620, scale: 7 });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

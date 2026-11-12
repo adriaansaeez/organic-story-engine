@@ -1,0 +1,12 @@
+{
+  "_note": "One line per beat of shotlist.md. Then: python3 engine/tools/voice.py <this dir>/narration.json",
+  "language": "en",
+  "speed": 1.25,
+  "lead_in": 0.2,
+  "pause_after": {},
+  "voice": {"model_id": "eleven_multilingual_v2"},
+  "lines": [
+    {"id": "b1", "text": "TODO: first line."},
+    {"id": "b2", "text": "TODO: second line."}
+  ]
+}

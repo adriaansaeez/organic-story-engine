@@ -1,0 +1,84 @@
+{
+  "name": "The Village",
+  "language": "en",
+  "account": "your_account",
+  "episode_prefix": "ep",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "length_s": [
+      40,
+      50
+    ]
+  },
+  "scale": "1 art px = 10 cm. A villager is 16 px tall; pines 60-90 px; houses 50-80 px wide.",
+  "runtime": {
+    "ink": "#fff4dc",
+    "accent": "#f3c75a"
+  },
+  "fog": {
+    "light": "#e2e8f3",
+    "base": "#b8c4da",
+    "shade": "#8a98b6"
+  },
+  "map": {
+    "current": "v3",
+    "generator": "map/generate.py",
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "roles": [
+    {
+      "id": "lenador",
+      "label": "Woodcutter",
+      "quota": 0.22
+    },
+    {
+      "id": "recolector",
+      "label": "Gatherer",
+      "quota": 0.22
+    },
+    {
+      "id": "constructor",
+      "label": "Builder",
+      "quota": 0.15
+    },
+    {
+      "id": "cazador",
+      "label": "Hunter",
+      "quota": 0.12
+    },
+    {
+      "id": "agricultor",
+      "label": "Farmer",
+      "quota": 0.12
+    },
+    {
+      "id": "cocinero",
+      "label": "Cook",
+      "quota": 0.09
+    },
+    {
+      "id": "explorador",
+      "label": "Explorer",
+      "quota": 0.08
+    }
+  ],
+  "routes": {
+    "a": {
+      "id": "harmony",
+      "label": "Harmony",
+      "meaning": "towards peace with the bigger kingdoms"
+    },
+    "b": {
+      "id": "power",
+      "label": "Power",
+      "meaning": "towards force and expansion"
+    },
+    "threshold": 5
+  },
+  "landmarks": {}
+}

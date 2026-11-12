@@ -1,0 +1,106 @@
+{
+ "version": "v3",
+ "w": 1920,
+ "h": 1080,
+ "escala": "1 px = 10 cm",
+ "lugares": {
+  "reino_industria_emblema": [
+   306,
+   578
+  ],
+  "reino_industria_chimeneas": [
+   [
+    158,
+    404
+   ],
+   [
+    217,
+    532
+   ],
+   [
+    390,
+    712
+   ],
+   [
+    243,
+    880
+   ]
+  ],
+  "reino_industria": [
+   300,
+   830
+  ],
+  "reino_montana_templo": [
+   1680,
+   200
+  ],
+  "reino_montana_pagoda": [
+   1820,
+   150
+  ],
+  "reino_montana_estandarte": [
+   1659,
+   357
+  ],
+  "reino_montana": [
+   1640,
+   250
+  ],
+  "banco_oeste": [
+   942,
+   534
+  ],
+  "banco_este": [
+   976,
+   533
+  ],
+  "fogata": [
+   960,
+   543
+  ],
+  "claro": {
+   "centro": [
+    960,
+    528
+   ],
+   "radios": [
+    128,
+    100
+   ]
+  },
+  "sendero": [
+   [
+    960,
+    556
+   ],
+   [
+    954,
+    600
+   ],
+   [
+    942,
+    660
+   ],
+   [
+    928,
+    740
+   ],
+   [
+    918,
+    830
+   ],
+   [
+    908,
+    930
+   ],
+   [
+    900,
+    1080
+   ]
+  ],
+  "reino_selva": [
+   1640,
+   860
+  ]
+ }
+}
